@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from google.cloud import storage, bigquery
 import base64
 import binascii
 import os
 import re
-from flask import escape
 from datetime import datetime
+from google.cloud import storage, bigquery
 
-fixity_date = datetime.now()
+FIXITY_DATE = datetime.now()
+
 
 def main(bucket={}, event={}):
     if event != {}:
@@ -35,6 +35,7 @@ def main(bucket={}, event={}):
         bagit.write_and_upload_manifest()
         bagit.write_to_bigquery()
 
+
 def match_bag(event, bags):
     if event == {}:
         return bags
@@ -42,6 +43,8 @@ def match_bag(event, bags):
     for bag in bags:
         if bag in filename:
             return [bag]
+    return []
+
 
 def get_bags(bucket, top_prefix=None):
     # Recurse through directory tree until you hit 'data/' to create a list of every bag
@@ -49,23 +52,30 @@ def get_bags(bucket, top_prefix=None):
     top_prefixes = get_prefixes(bucket, top_prefix)
     for prefix in top_prefixes:
         if prefix.endswith('data/'):
-            prefixes.append(re.sub('\/data\/$', '', prefix)) # remove data/ from bag name
+            prefixes.append(re.sub(r'\/data\/$', '',
+                                   prefix))  # remove data/ from bag name
         else:
             prefixes += get_bags(bucket, prefix)
     return prefixes
+
 
 def get_prefixes(bucket, prefix=None):
     iterator = bucket.list_blobs(prefix=prefix, delimiter="/")
     response = iterator._get_next_page_response()
     return response['prefixes']
 
+
 def fail_on_manifest(event):
     filename = event.resource['name']
     if 'manifest-md5sum.txt' in filename:
         exit(0)
 
+def decode_hash(hash_bytes):
+    return binascii.hexlify(
+        base64.urlsafe_b64decode(hash_bytes)).decode('utf-8')
+
 class BagIt:
-    def __init__ (self, bucket, bag):
+    def __init__(self, bucket, bag):
         self.bag = bag
         self.bucket_name = os.environ['BUCKET']
         self.bucket = bucket
@@ -79,9 +89,6 @@ class BagIt:
             blobs_with_metadata.append(self.get_metadata(blob.name))
         return blobs_with_metadata
 
-    def decode_hash(self, bytes):
-        return binascii.hexlify(base64.urlsafe_b64decode(bytes)).decode('utf-8')
-
     def get_metadata(self, blob_name):
         blob = self.bucket.get_blob(blob_name)
         return {
@@ -89,8 +96,8 @@ class BagIt:
             'id': blob.id,
             'size': blob.size,
             'updated': blob.updated,
-            'crc32c': self.decode_hash(blob.crc32c),
-            'md5sum': self.decode_hash(blob.md5_hash)
+            'crc32c': decode_hash(blob.crc32c),
+            'md5sum': decode_hash(blob.md5_hash)
         }
 
     def write_to_bigquery(self):
@@ -98,13 +105,18 @@ class BagIt:
         table_id = 'records'  # replace with your table ID
         table_ref = self.bigquery_client.dataset(dataset_id).table(table_id)
         table = self.bigquery_client.get_table(table_ref)  # API request
-        rows_to_insert = list(map(lambda blob: (self.bucket_name, self.bag, blob['name'], blob['size'], blob['updated'], blob['crc32c'], blob['md5sum'], fixity_date), self.blobs))
+        rows_to_insert = list(
+            map(
+                lambda blob:
+                (self.bucket_name, self.bag, blob['name'], blob['size'], blob[
+                    'updated'], blob['crc32c'], blob['md5sum'], FIXITY_DATE),
+                self.blobs))
         self.bigquery_client.insert_rows(table, rows_to_insert)
 
     def write_and_upload_manifest(self):
         manifest = ""
         for blob in self.blobs:
             manifest = manifest + blob['name'] + '\t' + blob['md5sum'] + '\n'
-        
+
         manifest_blob = self.bucket.blob(f'{self.bag}/manifest-md5sum.txt')
         manifest_blob.upload_from_string(manifest)
