@@ -1,5 +1,5 @@
-# Fixity Metadata for GCS
-This script pulls metadata and checksums for file archives in GCS and stores them in a manifest file and in BigQuery to track changes over time. The script uses the [BagIt](https://tools.ietf.org/html/draft-kunze-bagit-17) specification.
+# Fixity Metadata for GCS 🗃
+This script pulls metadata and checksums for file archives in Google Cloud Storage and stores them in a manifest file and in BigQuery to track changes over time. The script uses the [BagIt](https://tools.ietf.org/html/draft-kunze-bagit-17) specification.
 
 ## Overview
 Files should be stored in a GCS bucket in _bag_, or a directory in GCS bucket. In that bag, the script will generate a manifest file and keep track of changes over time in a BigQuery dataset.
@@ -8,7 +8,6 @@ The script here is a Cloud Function that listens on changes to a GCS bucket, the
 
 The script supports as many bags as you'd like to define for a single Bucket. A Bag is defined as a directory containing a `data/` directory. The example below constitutes 3 different bags: `col1/bag1`, `col1/bag2`, and `col1/bag1`. Bags can be nested in collections or folders as long as they contain a `data/` directory.
 ```
-.
 .
 ├── col1
 │   ├── bag1
