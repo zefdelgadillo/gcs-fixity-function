@@ -6,14 +6,27 @@ Files should be stored in a GCS bucket in _bag_, or a directory in GCS bucket. I
 
 The script here is a Cloud Function that listens on changes to a GCS bucket, then pulls metadata to create a manifest file with the md5sum, and save that information in BigQuery for reporting and audit purposes.
 
-Here is an example file structure for a bag titled `my-bag`. Archived files should be uploaded into a `data/` directory.
+The script supports as many bags as you'd like to define for a single Bucket. A Bag is defined as a directory containing a `data/` directory. The example below constitutes 3 different bags: `col1/bag1`, `col1/bag2`, and `col1/bag1`. Bags can be nested in collections or folders as long as they contain a `data/` directory.
 ```
 .
-├── my-bag
-│   ├── manifest-md5sum.txt
-│   └── data
-│       ├── file1.zip
-│       └── file2.zip
+.
+├── col1
+│   ├── bag1
+│   │   └── data
+│   │       ├── a
+│   │       ├── b
+│   │       └── c
+│   └── bag2
+│       └── data
+│           ├── a
+│           ├── b
+│           └── c
+├── col2
+│   ├── bag1
+│   │   └── data
+│   │       ├── a
+│   │       ├── b
+│   │       └── c
 ```
 
 ## Setup
@@ -22,7 +35,6 @@ Set the following environment variables:
 ```
 export PROJECT_ID=<my-project-id>
 export BUCKET_NAME=<my-target-bucket-name>
-export BAG_NAME=<my-target-bag-name>
 ```
 
 ### GCS Bucket Setup
@@ -34,9 +46,9 @@ gsutil mb gs://$BUCKET_NAME
 ```
 gsutil versioning set on gs://$BUCKET_NAME
 ```
-3. Upload files using the structure `gs://$BUCKET_NAME/$BAG_NAME/data/<file>`. Note: It's a good idea to bulk upload files _before_ deploying/invoking the Fixity script, since each file upload will trigger a script invokation for each uploaded file if the script is deployed first.
+3. Upload files using the structure into the `data/` directories created for each Bag. Note: It's a good idea to bulk upload files _before_ deploying/invoking the Fixity script, since each file upload will trigger a script invokation for each uploaded file if the script is deployed first.
 ```
-gsutil cp * gs://$BUCKET_NAME/$BAG_NAME/data/
+gsutil cp * gs://$BUCKET_NAME/<bag_path>/data/
 ```
 If you know the MD5 of a file before uploading you can specify it in the Content-MD5 header, which will cause the cloud storage service to reject the upload if the MD5 doesn't match the value computed by the service. See more [here](https://cloud.google.com/storage/docs/gsutil/commands/cp#checksum-validation)
 
@@ -50,7 +62,7 @@ Run the `./setup-bigquery.sh` script creates the following resources:
 * `fixity.file_operations` view to show all operations and diffs across time for a bag.
 
 ### Cloud Function Setup
-The following commands should be run *once for each bag* ensuring PROJECT_ID, BUCKET_NAME, and BAG_NAME are already set.
+The following commands should be run *once for each bucket* ensuring PROJECT_ID, and BUCKET_NAME are already set.
 
 These commands will deploy the Cloud Function that tracks your bucket.
 ```
