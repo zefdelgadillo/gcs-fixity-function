@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 PROJECT_ID=$(gcloud config get-value project)
-bq show fixityData > /dev/null
+bq show fixity_data > /dev/null
 
 # Create datasets
 if [ $? -eq 0 ]
 then
-  echo "fixityData dataset already created" >&2
+  echo "fixity_data dataset already created" >&2
 else
   bq --location=US mk -d \
   --description "Fixity metadata" \
-  fixityData
+  fixity_data
 fi
 bq show fixity > /dev/null
 if [ $? -eq 0 ]
@@ -22,14 +22,14 @@ else
 fi
 
 # Create table for records
-bq show fixityData.records > /dev/null
+bq show fixity-data.records > /dev/null
 if [ $? -eq 0 ]
 then
   echo "fixity table already created" >&2
 else
   bq mk --table \
   --description "Table for fixity records" \
-  fixityData.records \
+  fixity_data.records \
   ./scripts/schema.json
 fi
 

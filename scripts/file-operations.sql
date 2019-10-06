@@ -1,6 +1,6 @@
 with fixity_dates as (
 select distinct fixity_date
-from `PROJECT_ID.fixityData.records` 
+from `PROJECT_ID.fixity_data.records` 
 order by fixity_date asc
 ),
 ranked_fixity_dates as (
@@ -9,11 +9,11 @@ from fixity_dates
 ),
 fixity_files as (
 select distinct file_name
-from `PROJECT_ID.fixityData.records` 
+from `PROJECT_ID.fixity_data.records` 
 ),
 ranked_fixity_files as (
 select f.*, d.version
-from `PROJECT_ID.fixityData.records` f
+from `PROJECT_ID.fixity_data.records` f
 join ranked_fixity_dates d on f.fixity_date = d.fixity_date
 ),
 running_manifest as (

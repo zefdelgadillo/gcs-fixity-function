@@ -43,7 +43,7 @@ If you know the MD5 of a file before uploading you can specify it in the Content
 ### BigQuery Setup
 This should be run *once*.
 
-Run the `./scripts/setup-dataset.sh` script creates the following resources:
+Run the `./setup-bigquery.sh` script creates the following resources:
 * `fixityData` and `fixity` datasets.
 * `fixityData.records` table to hold each individual Fixity record for every invokation.
 * `fixity.current_manifest` view to show the current manifest of files for a bag.
@@ -55,8 +55,8 @@ The following commands should be run *once for each bag* ensuring PROJECT_ID, BU
 These commands will deploy the Cloud Function that tracks your bucket.
 ```
 gcloud functions deploy track-deletes-$BUCKET_NAME-$BAG_NAME --source=./src/ --entry-point main --runtime python37 --trigger-resource $BUCKET_NAME --trigger-event google.storage.object.archive --set-env-vars BUCKET=$BUCKET_NAME,BAG=$BAG_NAME
-gcloud functions deploy track-updates-$BUCKET_NAME-$BAG_NAME --source=./src/ --entry-point main --runtime python37 --trigger-resource $BUCKET_NAME --trigger-event google.storage.object.finalize --set-env-vars BUCKET=$BUCKET_NAME,BAG=$BAG_NAME
-gcloud functions deploy manual-$BUCKET_NAME-$BAG_NAME --source=./src/ --entry-point main --runtime python37 --trigger-http --set-env-vars BUCKET=$BUCKET_NAME,BAG=$BAG_NAME
+gcloud functions deploy track-updates-$BUCKET_NAME --source=./src/ --entry-point main --runtime python37 --trigger-resource $BUCKET_NAME --trigger-event google.storage.object.finalize --set-env-vars BUCKET=$BUCKET_NAME,BAG=$BAG_NAME
+gcloud functions deploy manual-$BUCKET_NAME --source=./src/ --entry-point main --runtime python37 --trigger-http --set-env-vars BUCKET=$BUCKET_NAME
 ```
 
 ## License
