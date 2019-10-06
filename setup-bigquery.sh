@@ -22,7 +22,7 @@ else
 fi
 
 # Create table for records
-bq show fixity-data.records > /dev/null
+bq show fixity_data.records > /dev/null
 if [ $? -eq 0 ]
 then
   echo "fixity table already created" >&2
