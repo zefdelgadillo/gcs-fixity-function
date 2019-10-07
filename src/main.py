@@ -16,6 +16,7 @@ import base64
 import binascii
 import os
 import re
+import json
 from datetime import datetime
 from google.cloud import storage, bigquery
 
@@ -23,31 +24,32 @@ FIXITY_DATE = datetime.now()
 FIXITY_MANIFEST_NAME = 'manifest-md5sum.txt'
 
 
-def main(bucket={}, event={}):
+def main(event={},context={}):
     """Identify bags to run Fixity, then write a manifest and write a record to BigQuery"""
-    if event == {} or fail_on_manifest(event):
-        print(event)
+    if 'data' in event:
+        event = json.loads(base64.b64decode(event['data']).decode('utf-8'))
+    print('Event: ' + str(event))
+    print('Context: ' + str(context))
+    if event == {} or fail_on_manifest(context):
         bucket_name = os.environ['BUCKET']
         storage_client = storage.Client()
         bucket = storage_client.get_bucket(bucket_name)
         bags = get_bags(bucket, None)
-        matched_bags = match_bag(event, bags)
+        matched_bags = match_bag(context, bags)
         for bag in matched_bags:
             bagit = BagIt(bucket, bag)
             bagit.write_and_upload_manifest()
             bagit.write_to_bigquery()
 
 
-def match_bag(event, bags):
+def match_bag(context, bags):
     """Matches bag to the file for which an event is triggered and returns bag 
     or list of all bags to run Fixity against."""
-    if event == {}:
-        return bags
-    filename = event.resource['name']
+    filename = context.resource['name']
     for bag in bags:
         if bag in filename:
             return [bag]
-    return []
+    return bags
 
 
 def get_bags(bucket, top_prefix=None):
@@ -71,9 +73,9 @@ def get_prefixes(bucket, prefix=None):
     return prefixes
 
 
-def fail_on_manifest(event):
+def fail_on_manifest(context):
     """Only respond to events where a file manifest is not created"""
-    filename = event.resource['name']
+    filename = context.resource['name']
     if FIXITY_MANIFEST_NAME in filename:
         return False
     return True
@@ -123,6 +125,7 @@ class BagIt:
         try:
             errors = self.bigquery_client.insert_rows(table, rows_to_insert)
             assert errors == []
+            print(str(errors))
             print(
                 f'Wrote {len(rows_to_insert)} Fixity records to BigQuery for {self.bucket_name}:{self.bag}'
             )

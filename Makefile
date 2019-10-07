@@ -14,8 +14,5 @@
 prepare:
 		./setup-bigquery.sh
 
-.PHONY: deploy
 deploy:
-		gcloud functions deploy track-deletes-${BUCKET_NAME} --source=./src/ --entry-point main --runtime python37 --trigger-resource ${BUCKET_NAME} --trigger-event google.storage.object.archive --set-env-vars BUCKET=${BUCKET_NAME}
-		gcloud functions deploy track-updates-${BUCKET_NAME} --source=./src/ --entry-point main --runtime python37 --trigger-resource ${BUCKET_NAME} --trigger-event google.storage.object.finalize --set-env-vars BUCKET=${BUCKET_NAME}
-		gcloud functions deploy manual-${BUCKET_NAME} --source=./src/ --entry-point main --runtime python37 --trigger-http --set-env-vars BUCKET=${BUCKET_NAME}
+		./deploy.sh

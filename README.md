@@ -56,16 +56,26 @@ This should be run *once*.
 
 Run `make prepare` script creates the following resources:
 
-* `fixityData` and `fixity` datasets.
-* `fixityData.records` table to hold each individual Fixity record for every invokation.
+* `fixity_data` and `fixity` datasets.
+* `fixity_data.records` table to hold each individual Fixity record for every invokation.
 * `fixity.current_manifest` view to show the current manifest of files for a bag.
 * `fixity.file_operations` view to show all operations and diffs across time for a bag.
 
 ### Cloud Function Setup
 The following commands should be run *once for each bucket* ensuring PROJECT_ID, and BUCKET_NAME are already set.
 
+Ensure `BUCKET_NAME` is set to your bucket name using `export BUCKET_NAME=<bucket-name>`.
 Run `make deploy`, which will deploy the Cloud Functions required for the operation:
 
 * `track-deletes`: Runs Fixity check any time a file is archived.
 * `track-updates`: Runs Fixity check any time a file is created or changed.
 * `manual`: Enables Fixity runs that can be scheduled or invoked manually.
+
+### Scheduler Setup
+To create a schedule, use the following command. The default recommended below will run on the 1st of every month at 8:00 am.
+
+Once the following has been created, you can run Fixity on demand by visiting https://console.cloud.google.com/cloudscheduler.
+```
+export SCHEDULE="1 of month 08:00"
+gcloud scheduler jobs create pubsub fixity-${BUCKET_NAME} --schedule="${SCHEDULE}" --topic=fixity-${BUCKET_NAME}-topic --message-body={} 
+```
