@@ -54,7 +54,8 @@ If you know the MD5 of a file before uploading you can specify it in the Content
 ### BigQuery Setup
 This should be run *once*.
 
-Run the `./setup-bigquery.sh` script creates the following resources:
+Run `make prepare` script creates the following resources:
+
 * `fixityData` and `fixity` datasets.
 * `fixityData.records` table to hold each individual Fixity record for every invokation.
 * `fixity.current_manifest` view to show the current manifest of files for a bag.
@@ -63,9 +64,8 @@ Run the `./setup-bigquery.sh` script creates the following resources:
 ### Cloud Function Setup
 The following commands should be run *once for each bucket* ensuring PROJECT_ID, and BUCKET_NAME are already set.
 
-These commands will deploy the Cloud Function that tracks your bucket.
-```
-gcloud functions deploy track-deletes-$BUCKET_NAME --source=./src/ --entry-point main --runtime python37 --trigger-resource $BUCKET_NAME --trigger-event google.storage.object.archive --set-env-vars BUCKET=$BUCKET_NAME
-gcloud functions deploy track-updates-$BUCKET_NAME --source=./src/ --entry-point main --runtime python37 --trigger-resource $BUCKET_NAME --trigger-event google.storage.object.finalize --set-env-vars BUCKET=$BUCKET_NAME
-gcloud functions deploy manual-$BUCKET_NAME --source=./src/ --entry-point main --runtime python37 --trigger-http --set-env-vars BUCKET=$BUCKET_NAME
-```
+Run `make deploy`, which will deploy the Cloud Functions required for the operation:
+
+* `track-deletes`: Runs Fixity check any time a file is archived.
+* `track-updates`: Runs Fixity check any time a file is created or changed.
+* `manual`: Enables Fixity runs that can be scheduled or invoked manually.

@@ -25,17 +25,17 @@ FIXITY_MANIFEST_NAME = 'manifest-md5sum.txt'
 
 def main(bucket={}, event={}):
     """Identify bags to run Fixity, then write a manifest and write a record to BigQuery"""
-    if event != {}:
-        fail_on_manifest(event)
-    bucket_name = os.environ['BUCKET']
-    storage_client = storage.Client()
-    bucket = storage_client.get_bucket(bucket_name)
-    bags = get_bags(bucket, None)
-    matched_bags = match_bag(event, bags)
-    for bag in matched_bags:
-        bagit = BagIt(bucket, bag)
-        bagit.write_and_upload_manifest()
-        bagit.write_to_bigquery()
+    if event == {} or fail_on_manifest(event):
+        print(event)
+        bucket_name = os.environ['BUCKET']
+        storage_client = storage.Client()
+        bucket = storage_client.get_bucket(bucket_name)
+        bags = get_bags(bucket, None)
+        matched_bags = match_bag(event, bags)
+        for bag in matched_bags:
+            bagit = BagIt(bucket, bag)
+            bagit.write_and_upload_manifest()
+            bagit.write_to_bigquery()
 
 
 def match_bag(event, bags):
@@ -72,10 +72,11 @@ def get_prefixes(bucket, prefix=None):
 
 
 def fail_on_manifest(event):
-    """Don't respond to an event where a file manifest is created"""
+    """Only respond to events where a file manifest is not created"""
     filename = event.resource['name']
     if FIXITY_MANIFEST_NAME in filename:
-        exit(0)
+        return False
+    return True
 
 
 class BagIt:
@@ -119,10 +120,15 @@ class BagIt:
                 (self.bucket_name, self.bag, blob['name'], blob['size'], blob[
                     'updated'], blob['crc32c'], blob['md5sum'], FIXITY_DATE),
                 self.blobs))
-        self.bigquery_client.insert_rows(table, rows_to_insert)
-        print(
-            f'Wrote {len(rows_to_insert)} Fixity records to BigQuery for {self.bucket_name}:{self.bag}'
-        )
+        try:
+            errors = self.bigquery_client.insert_rows(table, rows_to_insert)
+            assert errors == []
+            print(
+                f'Wrote {len(rows_to_insert)} Fixity records to BigQuery for {self.bucket_name}:{self.bag}'
+            )
+        except Exception as error:
+            print(f'Error: {error}. Re-run Fixity.')
+
 
     def write_and_upload_manifest(self):
         manifest = ""
