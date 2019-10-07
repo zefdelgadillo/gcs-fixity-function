@@ -20,9 +20,11 @@ from datetime import datetime
 from google.cloud import storage, bigquery
 
 FIXITY_DATE = datetime.now()
+FIXITY_MANIFEST_NAME = 'manifest-md5sum.txt'
 
 
 def main(bucket={}, event={}):
+    """Identify bags to run Fixity, then write a manifest and write a record to BigQuery"""
     if event != {}:
         fail_on_manifest(event)
     bucket_name = os.environ['BUCKET']
@@ -37,6 +39,8 @@ def main(bucket={}, event={}):
 
 
 def match_bag(event, bags):
+    """Matches bag to the file for which an event is triggered and returns bag 
+    or list of all bags to run Fixity against."""
     if event == {}:
         return bags
     filename = event.resource['name']
@@ -47,7 +51,7 @@ def match_bag(event, bags):
 
 
 def get_bags(bucket, top_prefix=None):
-    # Recurse through directory tree until you hit 'data/' to create a list of every bag
+    """Recurse through GCS directory tree until you hit 'data/' to create a list of every bag"""
     prefixes = []
     top_prefixes = get_prefixes(bucket, top_prefix)
     for prefix in top_prefixes:
@@ -60,19 +64,19 @@ def get_bags(bucket, top_prefix=None):
 
 
 def get_prefixes(bucket, prefix=None):
-    iterator = bucket.list_blobs(prefix=prefix, delimiter="/")
-    response = iterator._get_next_page_response()
-    return response['prefixes']
+    iterator = bucket.list_blobs(prefix=prefix, delimiter='/')
+    prefixes = []
+    for page in iterator.pages:
+        prefixes.extend(list(page.prefixes))
+    return prefixes
 
 
 def fail_on_manifest(event):
+    """Don't respond to an event where a file manifest is created"""
     filename = event.resource['name']
-    if 'manifest-md5sum.txt' in filename:
+    if FIXITY_MANIFEST_NAME in filename:
         exit(0)
 
-def decode_hash(hash_bytes):
-    return binascii.hexlify(
-        base64.urlsafe_b64decode(hash_bytes)).decode('utf-8')
 
 class BagIt:
     def __init__(self, bucket, bag):
@@ -90,6 +94,10 @@ class BagIt:
         return blobs_with_metadata
 
     def get_metadata(self, blob_name):
+        def decode_hash(hash_bytes):
+            return binascii.hexlify(
+                base64.urlsafe_b64decode(hash_bytes)).decode('utf-8')
+
         blob = self.bucket.get_blob(blob_name)
         return {
             'name': blob.name,
@@ -112,11 +120,15 @@ class BagIt:
                     'updated'], blob['crc32c'], blob['md5sum'], FIXITY_DATE),
                 self.blobs))
         self.bigquery_client.insert_rows(table, rows_to_insert)
+        print(
+            f'Wrote {len(rows_to_insert)} Fixity records to BigQuery for {self.bucket_name}:{self.bag}'
+        )
 
     def write_and_upload_manifest(self):
         manifest = ""
         for blob in self.blobs:
             manifest = manifest + blob['name'] + '\t' + blob['md5sum'] + '\n'
 
-        manifest_blob = self.bucket.blob(f'{self.bag}/manifest-md5sum.txt')
+        manifest_blob = self.bucket.blob(f'{self.bag}/{FIXITY_MANIFEST_NAME}')
         manifest_blob.upload_from_string(manifest)
+        print(f'Wrote manifest file for {self.bucket_name}:{self.bag}')
