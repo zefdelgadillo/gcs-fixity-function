@@ -37,7 +37,7 @@ gsutil cp * gs://$BUCKET_NAME/<bag_path>/data/
 ```
 If you know the MD5 of a file before uploading you can specify it in the Content-MD5 header, which will cause the cloud storage service to reject the upload if the MD5 doesn't match the value computed by the service. See more [here](https://cloud.google.com/storage/docs/gsutil/commands/cp#checksum-validation)
 
-### Cloud Function Setup
+## Cloud Function Setup
 The following commands should be run *once for each bucket* ensuring PROJECT_ID, and BUCKET_NAME are already set.
 
 Ensure `BUCKET_NAME` is set to your bucket name using `export BUCKET_NAME=<bucket-name>` and run the following:
@@ -50,7 +50,7 @@ This will deploy the Cloud Functions required for the operation:
 * `track-updates`: Runs Fixity check any time a file is created or changed.
 * `manual`: Enables Fixity runs that can be scheduled or invoked manually.
 
-### Scheduler Setup
+## Scheduler Setup
 Create a task in Cloud Scheduler. The default recommended schedule below will run on the 1st of every month at 8:00 am.
 
 ```
