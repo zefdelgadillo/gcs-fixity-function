@@ -1,10 +1,12 @@
-# Setup
+`# Setup
 ## Prepare
 To setup this function, run through these instructions from the root of the repository or using Cloud Shell.
 
 Set the following environment variables:
 ```
 export PROJECT_ID=<my-project-id>
+```
+```
 export BUCKET_NAME=<my-target-bucket-name>
 ```
 
@@ -59,6 +61,8 @@ Create a task in Cloud Scheduler. The default recommended schedule below will ru
 
 ```
 export SCHEDULE="1 of month 08:00"
+```
+```
 gcloud scheduler jobs create pubsub fixity-${BUCKET_NAME} --schedule="${SCHEDULE}" --topic=fixity-${BUCKET_NAME}-topic --message-body={} 
 ```
 
