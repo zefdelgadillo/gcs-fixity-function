@@ -38,7 +38,8 @@ BUCKET: Rare Books
 ```
 
 ## Process
-![./docs/process-diagram.png]
+![Fixity Process Diagram](./docs/process-diagram.png)
+
 * Google Cloud Function listens on changes to a GCS Bucket (file archives, file updates)
 * (or) Google Cloud Scheduler invokes Cloud Function manually or via a predefined schedule
 * Function reads metadata of files for each Bag* that has file updates and writes a new Manifest file into each Bag
