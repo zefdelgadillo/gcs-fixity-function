@@ -9,7 +9,7 @@ export PROJECT_ID=<my-project-id>
 ```
 export BUCKET_NAME=<my-target-bucket-name>
 ```
-
+Then run the following:
 ```bash
 gcloud config set project $PROJECT_ID
 ```
@@ -59,9 +59,12 @@ This will deploy the Cloud Functions required for the operation:
 ## Scheduler Setup
 Create a task in Cloud Scheduler. The default recommended schedule below will run on the 1st of every month at 8:00 am.
 
+Set a schedule:
+
 ```
 export SCHEDULE="1 of month 08:00"
 ```
+Then run the following:
 ```
 gcloud scheduler jobs create pubsub fixity-${BUCKET_NAME} --schedule="${SCHEDULE}" --topic=fixity-${BUCKET_NAME}-topic --message-body={} 
 ```
