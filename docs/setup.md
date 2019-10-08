@@ -1,15 +1,17 @@
 # Setup
+
+
 ## Prepare
 To setup this function, run through these instructions from the root of the repository or using Cloud Shell.
 
-Set the following environment variables:
+Set the following environment variables, replacing the values with those for your project and bucket:
 ```bash
 export PROJECT_ID=<my-project-id>
 ```
 ```bash
 export BUCKET_NAME=<my-target-bucket-name>
 ```
-Then run the following:
+Then run the following command as-is:
 ```bash
 gcloud config set project $PROJECT_ID
 ```
