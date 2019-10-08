@@ -1,32 +1,50 @@
 # Fixity Metadata for GCS 🗃
-This script pulls metadata and checksums for file archives in Google Cloud Storage and stores them in a manifest file and in BigQuery to track changes over time. The script uses the [BagIt](https://tools.ietf.org/html/draft-kunze-bagit-17) specification.
+This script pulls metadata and checksums for file archives in Google Cloud Storage and stores them in a manifest file and in BigQuery to track changes over time. The script uses the [BagIt](https://tools.ietf.org/html/rfc8493) specification.
 
 ## Overview
-Files should be stored in a GCS bucket in _bag_, or a directory in GCS bucket. In that bag, the script will generate a manifest file and keep track of changes over time in a BigQuery dataset.
+Each time this Fixity function is run for any file archive bag using the BagIt specification, the following is created:
+* An MD5 checksum manifest file
+* Records in BigQuery containing the following metadata: bucket, bag, file name, file size, checksum, file modified date, fixity run date.
 
-The script here is a Cloud Function that listens on changes to a GCS bucket, then pulls metadata to create a manifest file with the md5sum, and save that information in BigQuery for reporting and audit purposes.
+### Buckets
+This Fixity function is configured for 1 Google Cloud Storage bucket containing any number of Bags.
 
-The script supports as many bags as you'd like to define for a single Bucket. A Bag is defined as a directory containing a `data/` directory. The example below constitutes 3 different bags: `col1/bag1`, `col1/bag2`, and `col1/bag1`. Bags can be nested in collections or folders as long as they contain a `data/` directory.
+### Bags
+Bags should be created using the [BagIt Specification (RFC 8493)](https://tools.ietf.org/html/rfc8493). A Bag is a directory in a GCS bucket that contains a `data/` directory containing archived files. 
+
+Any number of bags can be created in a GCS bucket, **as long as each bag contains a `data/` directory**. In the following example, this function will recognize 4 bags: `collection-europe/italy/`, `collection-europe/france/`, `collection-na/1700s/`, and `uncategorized/`.
 ```
+BUCKET: Rare Books
 .
-├── col1
-│   ├── bag1
+├── collection-europe
+│   ├── italy
 │   │   └── data
-│   │       ├── a
-│   │       ├── b
-│   │       └── c
-│   └── bag2
+│   │       ├── book1
+│   │       ├── book2
+│   │       └── book3
+│   └── france
 │       └── data
-│           ├── a
-│           ├── b
-│           └── c
-├── col2
-│   ├── bag1
-│   │   └── data
-│   │       ├── a
-│   │       ├── b
-│   │       └── c
+│           ├── book1
+│           └── book2
+├── collection-na
+│   └── 1700s
+│       └── data
+│           ├── book1
+│           ├── book2
+│           └── book3
+└── uncategorized
+    └── data
+        └── a
 ```
+
+## Process
+![./docs/process-diagram.png]
+* Google Cloud Function listens on changes to a GCS Bucket (file archives, file updates)
+* (or) Google Cloud Scheduler invokes Cloud Function manually or via a predefined schedule
+* Function reads metadata of files for each Bag* that has file updates and writes a new Manifest file into each Bag
+* Function writes records into BigQuery for each Bag with new metadata
+
+_* If function is invoked by listening to changes on a GCS bucket, then Fixity is run only for the Bag that had the change. If function is invoked by Cloud Scheduler, then Fixity is run for the entire GCS Bucket_
 
 ## Setup
 First, set your project by using `gcloud config set project <my-project>`
