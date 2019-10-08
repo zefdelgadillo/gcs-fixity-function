@@ -24,7 +24,7 @@ FIXITY_DATE = datetime.now()
 FIXITY_MANIFEST_NAME = 'manifest-md5sum.txt'
 
 
-def main(event={},context={}):
+def main(event={}, context={}):
     """Identify bags to run Fixity, then write a manifest and write a record to BigQuery"""
     if 'data' in event:
         event = json.loads(base64.b64decode(event['data']).decode('utf-8'))
@@ -43,7 +43,7 @@ def main(event={},context={}):
 
 
 def match_bag(context, bags):
-    """Matches bag to the file for which an event is triggered and returns bag 
+    """Matches bag to the file for which an event is triggered and returns bag
     or list of all bags to run Fixity against."""
     filename = context.resource['name']
     for bag in bags:
@@ -66,6 +66,7 @@ def get_bags(bucket, top_prefix=None):
 
 
 def get_prefixes(bucket, prefix=None):
+    """Retrieves the directories for a bucket"""
     iterator = bucket.list_blobs(prefix=prefix, delimiter='/')
     prefixes = []
     for page in iterator.pages:
@@ -83,6 +84,7 @@ def fail_on_manifest(context):
 
 class BagIt:
     def __init__(self, bucket, bag):
+        """Instantiates variables and BigQuery client"""
         self.bag = bag
         self.bucket_name = os.environ['BUCKET']
         self.bucket = bucket
@@ -90,6 +92,7 @@ class BagIt:
         self.bigquery_client = bigquery.Client()
 
     def get_blobs(self):
+        """Retrieve files with metadata present in a bag"""
         blobs = self.bucket.list_blobs(prefix=f'{self.bag}/data/')
         blobs_with_metadata = []
         for blob in blobs:
@@ -97,6 +100,7 @@ class BagIt:
         return blobs_with_metadata
 
     def get_metadata(self, blob_name):
+        """Transforms metadata into a dict object"""
         def decode_hash(hash_bytes):
             return binascii.hexlify(
                 base64.urlsafe_b64decode(hash_bytes)).decode('utf-8')
@@ -112,6 +116,7 @@ class BagIt:
         }
 
     def write_to_bigquery(self):
+        """Writes dict object into BigQuery using Streaming Inserts"""
         dataset_id = 'fixity_data'  # replace with your dataset ID
         table_id = 'records'  # replace with your table ID
         table_ref = self.bigquery_client.dataset(dataset_id).table(table_id)
@@ -125,15 +130,16 @@ class BagIt:
         try:
             errors = self.bigquery_client.insert_rows(table, rows_to_insert)
             assert errors == []
-            print(str(errors))
             print(
-                f'Wrote {len(rows_to_insert)} Fixity records to BigQuery for {self.bucket_name}:{self.bag}'
+                f'Wrote {len(rows_to_insert)} records to BigQuery for {self.bucket_name}:{self.bag}'
             )
+        except AssertionError as error:
+            print(f'BigQuery error: {error}. Re-run Fixity')
         except Exception as error:
             print(f'Error: {error}. Re-run Fixity.')
 
-
     def write_and_upload_manifest(self):
+        """Writes a manifest file into bag top-level directory"""
         manifest = ""
         for blob in self.blobs:
             manifest = manifest + blob['name'] + '\t' + blob['md5sum'] + '\n'
