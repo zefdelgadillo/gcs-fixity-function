@@ -2,7 +2,11 @@
 ## Prepare
 To setup this function, run through these instructions from the root of the repository or using Cloud Shell.
 
-First, set your project by using `gcloud config set project <my-project>`
+First, set your project by using 
+```
+gcloud config set project <my-project>
+```
+
 Set the following environment variables:
 ```
 export PROJECT_ID=<my-project-id>
