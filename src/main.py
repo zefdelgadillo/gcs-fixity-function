@@ -30,7 +30,7 @@ def main(event={}, context={}):
         event = json.loads(base64.b64decode(event['data']).decode('utf-8'))
     print('Event: ' + str(event))
     print('Context: ' + str(context))
-    if event == {} or fail_on_manifest(context):
+    if event == {} or is_not_manifest(context):
         bucket_name = os.environ['BUCKET']
         storage_client = storage.Client()
         bucket = storage_client.get_bucket(bucket_name)
@@ -74,7 +74,7 @@ def get_prefixes(bucket, prefix=None):
     return prefixes
 
 
-def fail_on_manifest(context):
+def is_not_manifest(context):
     """Only respond to events where a file manifest is not created"""
     filename = context.resource['name']
     if FIXITY_MANIFEST_NAME in filename:
