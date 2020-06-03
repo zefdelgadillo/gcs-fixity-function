@@ -1,7 +1,7 @@
 # Setup
 Clone this repository and run locally, or use Cloud Shell to walk through the steps:
 
-[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.png)](https://ssh.cloud.google.com/cloudshell/open?page=shell&cloudshell_git_repo=https://github.com/zefdelgadillo/gcs-fixity-function&cloudshell_tutorial=docs%2Fsetup.md)
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.png)](https://ssh.cloud.google.com/cloudshell/open?page=shell&cloudshell_git_repo=https://github.com/zefdelgadillo/gcs-fixity-function&cloudshell_tutorial=docs%remove.md)
 
 ## Prepare
 To setup this function, run through these instructions from the root of the repository or using Cloud Shell. 
